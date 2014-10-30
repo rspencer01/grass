@@ -1,0 +1,30 @@
+#version 140
+in vec3 inPosition;
+in vec4 inColour;
+in vec2 inTex;
+in vec3 inNorm;
+in vec4 inTexShades;
+
+layout(shared)uniform frameData
+{
+  mat4x4 transformationMatrix;
+  vec4 cameraPos;
+  mat4x4 projectionMatrix;  
+};
+
+
+layout(shared)uniform objectData
+{
+  mat4x4 objectMatrix;
+};
+
+out vec4 vsPosition;
+out vec2 vsTex;
+out vec4 vsNormal;
+
+void main()
+{
+  vsPosition = objectMatrix*vec4(inPosition.xyz,1);
+  vsTex = inTex;
+  vsNormal = vec4(inNorm,1);
+}

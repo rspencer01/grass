@@ -1,0 +1,53 @@
+#version 150
+
+layout(triangles) in;
+layout(triangle_strip,max_vertices=4) out;
+
+in vec4 vsPosition[];
+in vec4 vsNormal[];
+in vec4 vsColour[];
+in vec2 vsTex[];
+out vec4 gsPosition;
+out vec4 gsNormal;
+out vec2 gsTex;
+out vec4 gsColour;
+out mat3 gsNormalMat;
+out vec3 B;
+out vec3 T;
+
+layout(shared)uniform frameData
+{
+  mat4x4 transformationMatrix;
+  vec4 cameraPos;
+  mat4x4 projectionMatrix;  
+};
+
+layout(shared)uniform objectData
+{
+  mat4x4 objectMatrix;
+  mat4x4 boneMatrices[64];
+};
+
+void main() 
+{
+  for (int i = 0; i<3 ; i++)
+  {
+    vec3 deltaPos1 = -(vsPosition[i] - vsPosition[(i+1)%3]).xyz;
+    vec3 deltaPos2 = -(vsPosition[i] - vsPosition[(i+2)%3]).xyz;
+    vec2 deltauv1 = -vsTex[i] + vsTex[(i+1)%3];
+    vec2 deltauv2 = -vsTex[i] + vsTex[(i+2)%3];
+    
+    T = (deltaPos1*deltauv2.y-deltaPos2*deltauv1.y) / (deltauv1.x*deltauv2.y - deltauv2.x*deltauv1.y);
+    B = (deltaPos1*deltauv2.x-deltaPos2*deltauv1.x) / (deltauv1.y*deltauv2.x - deltauv2.y*deltauv1.x);
+    vec3 nm = vsNormal[i].xyz;
+    //nm.x*=-1;
+    gsNormalMat = (mat3(normalize(T),normalize(nm).xyz,normalize(B)));
+  
+  	gsNormal = vsNormal[i];
+    gsColour = vsColour[i];
+    gsTex = vsTex[i];
+    gl_Position = projectionMatrix * transformationMatrix*objectMatrix *vsPosition[i];
+    EmitVertex();
+  }
+  EndPrimitive();
+} 

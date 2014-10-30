@@ -1,0 +1,77 @@
+#version 150
+
+layout(triangles) in;
+layout(triangle_strip,max_vertices=4) out;
+
+in vec4 vsPosition[];
+in vec4 vsNormal[];
+in vec4 vsColour[];
+in vec2 vsTex[];
+out vec4 gsPosition;
+out vec4 gsNormal;
+out vec2 gsTex;
+out vec4 gsColour;
+out mat3 gsNormalMat;
+out vec3 B;
+out vec3 T;
+
+layout(shared)uniform frameData
+{
+  mat4x4 transformationMatrix;
+  vec4 cameraPos;
+  mat4x4 projectionMatrix;  
+};
+
+layout(shared)uniform objectData
+{
+  mat4x4 objectMatrix;
+  mat4x4 boneMatrices[64];
+};
+
+vec2 shape(float t,float offset)
+{
+  float r =0.4;
+  float l = 0.5;
+  return vec2(r*sin(l*t/r+offset)-r*sin(offset),r-r*cos(l*t/r+offset)+r*cos(offset));
+}
+
+uniform sampler2D colourTexture;
+uniform sampler2D noiseTexture;
+uniform sampler2D grassDataTexture;
+
+void main() 
+{
+  vec4 grsps;
+  float mxlen = max(max(length(vsPosition[0]-vsPosition[1]),length(vsPosition[1]-vsPosition[2])),length(vsPosition[2]-vsPosition[0]));
+  if (mxlen==length(vsPosition[0]-vsPosition[1]))
+    grsps = (vsPosition[0]+vsPosition[1])/2;
+  if (mxlen==length(vsPosition[1]-vsPosition[2]))
+    grsps = (vsPosition[1]+vsPosition[2])/2;
+  if (mxlen==length(vsPosition[2]-vsPosition[0]))
+    grsps = (vsPosition[2]+vsPosition[0])/2;
+  grsps.y = 0;
+  for (int i = 0; i<3 ; i++)
+  {
+    vec3 diff = vsPosition[i].xyz - grsps.xyz;
+    diff.y = 0;
+    float dst = vsPosition[i].y;
+    vec4 pos = vsPosition[i];
+    float theta = 3*texture(noiseTexture,(pos.xz+7)/10).a;
+    vec3 nrm = vsNormal[i].xyz;
+    vec3 crs = normalize(cross(nrm,vec3(0,1,0)));
+    vec2 sp = shape(dst,theta*0.1);
+    pos.xyz = sp.y*nrm+sp.x*vec3(0,1,0);
+    float rnd = texture(grassDataTexture,(pos.xz+diff.xz+grsps.xz)/10).a;//abs(3*texture(noiseTexture,(pos.xz+3)/10).a);
+    pos.y *=rnd;
+    pos.xyz += diff+grsps.xyz;
+    //pos.z += vsPosition[i].z;
+    vec3 nm = vsNormal[i].xyz;
+  	gsNormal = vsNormal[i];
+    gsColour = vsColour[i];
+    gsTex = vsTex[i];
+    gl_Position = projectionMatrix * transformationMatrix*pos;
+    gsPosition = pos;
+    EmitVertex();
+  }
+  EndPrimitive();
+} 

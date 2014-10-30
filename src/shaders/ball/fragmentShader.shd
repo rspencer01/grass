@@ -1,0 +1,30 @@
+#version 140
+
+in vec4 gsPosition;
+in vec2 gsTex;
+in mat3 gsNormalMat;
+in vec3 T;in vec3 B;
+in vec4 gsNormal;
+out vec4 FragColor;
+
+layout(shared)uniform frameData
+{
+  mat4x4 transformationMatrix;
+  vec4 cameraPos;
+  mat4x4 projectionMatrix;  
+};
+
+
+layout(shared)uniform objectData
+{
+  mat4x4 objectMatrix;
+};
+uniform sampler2D colourTexture;
+uniform sampler2D noiseTexture;
+
+void main()
+{
+  float shad = 0.8+0.2*dot(gsNormal,vec4(1,1,0,0));
+  
+  FragColor = vec4(vec3(shad),1);
+}
